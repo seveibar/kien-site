@@ -6,27 +6,42 @@ static $site_config_path = "../config.json";
 //This will be changed to whatever exists in the above file
 static $config = NULL;
 
-// Path to course data directory, loaded from config
-static $data_path = NULL;
-
-// Returns course data path, loads if necessary
+// Returns course data path, loads config if necessary
 function get_data_path() {
-    global $data_path;
+    global $config;
+
+    // If config hasn't been loaded, load it
+    if ($config == NULL) {
+        loadConfig();
+    }
+
+    // Return course data path
+    return $config["course_data_path"];
+}
+
+// Returns submissions path, loads config if necessary
+function get_submissions_path(){
+    global $config;
+
+    // If config hasn't been loaded, load it
+    if ($config == NULL) {
+        loadConfig();
+    }
+
+    // Return course data path
+    return $config["submissions_path"];
+}
+
+
+// Load site configuration file
+function loadConfig(){
     global $site_config_path;
     global $config;
 
-    // If config doesn't exist, load it
-    if ($config == NULL) {
-        if (!file_exists($site_config_path)) {
-            error_out("$site_config_path does not exist. See setup guide");
-        }
-
-        $config = load_json($site_config_path);
-
-        $data_path = $config["course_data_path"];
-
+    if (!file_exists($site_config_path)) {
+        error_out("$site_config_path does not exist. See setup guide");
     }
-    return $get_data_path;
+    $config = load_json($site_config_path);
 }
 
 // For displaying error and stopping execution
@@ -48,7 +63,13 @@ function load_json($path){
     }
 
     return $json_data;
+}
 
+// Security check for that makes sure the session id matches the username
+function check_session($username){
+    if ($username !== $_SESSION["id"]){
+        error_out("Invalid Session!");
+    }
 }
 
 // Upload HW Assignment to server and unzip
@@ -57,14 +78,15 @@ function upload_homework($username, $assignment_id, $homework_file) {
 
     // Check user and assignment authenticity
     $class_config = get_class_config($username);
-    if ($username !== $_SESSION["id"]) {//Validate the id
-        echo "Something really got screwed up with usernames and session ids";
-        return array("error"=>"Something really got screwed up with usernames and session ids");
-    }
+
+    check_session($username);
+
     if (!is_valid_assignment($class_config, $assignment_id)) {
         return array("error"=>"This assignment is not valid");
     }
+
     $assignment_config = get_assignment_config($username, $assignment_id);
+
     if (!can_edit_assignment($username, $assignment_id, $assignment_config)) {//Made sure the user can upload to this homework
         return array("error"=>"assignment_closed");
     }
@@ -154,15 +176,12 @@ function can_edit_assignment($username, $assignment_id, $assignment_config) {
 
 
 //Gets the class information for assignments
-
 function get_class_config($username) {
     $data_path = get_data_path();
-    $file = $data_path."/results/class.json";
-    if (!file_exists($file)) {
-        ?><script>alert("Configuration for this class (class.JSON) does not exist.  Quitting");</script>
-        <?php exit();
-    }
-    return json_decode(file_get_contents($file), true);
+
+    $class_path = $data_path . "/class.json";
+
+    return load_json($class_path);
 }
 
 
