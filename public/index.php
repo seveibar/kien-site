@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 //Remove error reporting and ini set for production code
 error_reporting(E_ALL);

@@ -16,10 +16,6 @@ if (isset($_GET["error"])) {
 
 $username = $_SESSION["id"];
 $class_config = get_class_config($_SESSION["id"]);
-if ($class_config == NULL) {
-    ?><script>alert("Configuration for this class (class.JSON) is invalid.  Quitting");</script>
-    <?php exit();
-}
 $most_recent_assignment_id = $class_config["default_assignment"];
 $most_recent_assignment_version = most_recent_assignment_version($username, $most_recent_assignment_id);
 
@@ -51,7 +47,7 @@ $highest_version = most_recent_assignment_version($username, $assignment_id);
 
 //Function call to make sure assignment and homework_number and version number are all valid
 //If not valid do last homework
-//Function call to get data for assignment, homework_number and version number 
+//Function call to get data for assignment, homework_number and version number
 
 $points_received = 15;//Points_received for entire homework as an int
 $points_possible = 20;//Points_possible for entire homework as an int
@@ -65,7 +61,7 @@ $TA_grade = TA_grade($username, $assignment_id);
 $assignment_config = get_assignment_config($username, $assignment_id);
 $testcases_info = $assignment_config["testcases"];
 $version_results = get_assignment_results($username, $assignment_id, $assignment_version);
-if ($version_results) { 
+if ($version_results) {
     $testcases_results = $version_results["testcases"];
 } else {
     $testcases_results = array();
