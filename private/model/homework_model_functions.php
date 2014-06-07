@@ -1,30 +1,59 @@
 <?php
 
-//This is for Prof Cutler to edit
-static $path_to_path_file = "../../site_path.txt";
+// Relative to public directory
+static $site_config_path = "../config.json";
+
 //This will be changed to whatever exists in the above file
-static $path_front = "";
-function get_path_front() {
-    global $path_front;
-    global $path_to_path_file;
-    if ($path_front == "") {
-        if (!file_exists($path_to_path_file)) {
-            ?><script>alert("<?php echo $path_to_path_file?> does not exist.  Please make this file or edit the path in private/model/homework_model_functions.  The file should contain a single line of the path to the directory folder (ex: csci1200).  No whitespaces or return characters.");</script>
-            <?php exit();
+static $config = NULL;
+
+// Path to course data directory, loaded from config
+static $data_path = NULL;
+
+// Returns course data path, loads if necessary
+function get_data_path() {
+    global $data_path;
+    global $site_config_path;
+    global $config;
+
+    // If config doesn't exist, load it
+    if ($config == NULL) {
+        if (!file_exists($site_config_path)) {
+            error_out("$site_config_path does not exist. See setup guide");
         }
 
-        $file = fopen($path_to_path_file, 'r');
-        $path_front = trim(fgets($file));
-        fclose($file);
+        $config = load_json($site_config_path);
+
+        $data_path = $config["course_data_path"];
+
     }
-    return $path_front;
+    return $get_data_path;
 }
 
+// For displaying error and stopping execution
+function error_out($info){
+    echo "<script>alert(\"" . str_replace("\n","",str_replace("\"","",$info)) . "\");</script>";
+    exit();
+}
 
+// For loading and parsing json
+function load_json($path){
+    if (!file_exists($path)){
+        error_out("ERROR: Cannot load json from non-existant file $path");
+    }
+
+    $json_data = json_decode(file_get_contents($path),true);
+
+    if ($json_data == NULL){
+        error_out("ERROR: Cannot parse json $path");
+    }
+
+    return $json_data;
+
+}
 
 // Upload HW Assignment to server and unzip
 function upload_homework($username, $assignment_id, $homework_file) {
-    $path_front = get_path_front();
+    $data_path = get_data_path();
 
     // Check user and assignment authenticity
     $class_config = get_class_config($username);
@@ -47,7 +76,7 @@ function upload_homework($username, $assignment_id, $homework_file) {
     $filename = explode(".", $homework_file["name"]);
     $extension = end($filename);
 
-    $upload_path = $path_front."/submissions/".$assignment_id."/".$username;//Upload path
+    $upload_path = $data_path."/submissions/".$assignment_id."/".$username;//Upload path
 
     // TODO should support more than zip (.tar.gz etc.)
     if (!($homework_file["type"] === "application/zip")) {//Make sure the file is a zip file
@@ -93,7 +122,7 @@ function upload_homework($username, $assignment_id, $homework_file) {
         $json = array("selected_assignment"=>1);
         file_put_contents($settings_file, json_encode($json));
     }
-    $to_be_compiled = $path_front."/submissions/to_be_compiled.txt";
+    $to_be_compiled = $data_path."/submissions/to_be_compiled.txt";
     if (!file_exists($to_be_compiled)) {
         file_put_contents($to_be_compiled, $assignment_id."/".$username."/".$i."\n");
     } else {
@@ -106,9 +135,9 @@ function upload_homework($username, $assignment_id, $homework_file) {
 
 // Check if user has permission to edit homework
 function can_edit_assignment($username, $assignment_id, $assignment_config) {
-    $path_front = get_path_front();
+    $data_path = get_data_path();
     date_default_timezone_set('America/New_York');
-    $file = $path_front."/results/".$assignment_id."/".$username."/user_assignment_config.json";
+    $file = $data_path."/results/".$assignment_id."/".$username."/user_assignment_config.json";
     if (file_exists($file)) {
         $json = json_decode(file_get_contents($file), true);
         if (isset($json["due_date"]) && $json["due_date"] != "default") {
@@ -127,8 +156,8 @@ function can_edit_assignment($username, $assignment_id, $assignment_config) {
 //Gets the class information for assignments
 
 function get_class_config($username) {
-    $path_front = get_path_front();
-    $file = $path_front."/results/class.json";
+    $data_path = get_data_path();
+    $file = $data_path."/results/class.json";
     if (!file_exists($file)) {
         ?><script>alert("Configuration for this class (class.JSON) does not exist.  Quitting");</script>
         <?php exit();
@@ -139,8 +168,8 @@ function get_class_config($username) {
 
 // Find most recent submission from user
 function most_recent_assignment_version($username, $assignment_id) {
-    $path_front = get_path_front();
-    $path = $path_front."/submissions/".$assignment_id."/".$username;
+    $data_path = get_data_path();
+    $path = $data_path."/submissions/".$assignment_id."/".$username;
     $i = 1;
     while (file_exists($path."/".$i)) {
         $i++;
@@ -173,8 +202,8 @@ function is_valid_assignment($class_config, $assignment_id) {
 
 // Make sure student has actually submitted this version of an assignment
 function is_valid_assignment_version($username, $assignment_id, $assignment_version) {
-    $path_front = get_path_front();
-    $path = $path_front."/submissions/".$assignment_id."/".$username."/".$assignment_version;
+    $data_path = get_data_path();
+    $path = $data_path."/submissions/".$assignment_id."/".$username."/".$assignment_version;
     return file_exists($path);
 }
 
@@ -186,11 +215,11 @@ function TA_grade($username, $assignment_id) {
 }
 
 function version_in_grading_queue($username, $assignment_id, $assignment_version) {
-    $path_front = get_path_front();
+    $data_path = get_data_path();
     if (!is_valid_assignment_version($username, $assignment_id, $assignment_version)) {//If its not in the submissions folder
         return false;
     }
-    $file = $path_front."/results/".$assignment_id."/".$username."/".$assignment_version;
+    $file = $data_path."/results/".$assignment_id."/".$username."/".$assignment_version;
     if (file_exists($file)) {//If the version has already been graded
         return false;
     }
@@ -202,8 +231,8 @@ function version_in_grading_queue($username, $assignment_id, $assignment_version
 
 // Get the test cases from the instructor configuration file
 function get_assignment_config($username, $assignment_id) {
-    $path_front = get_path_front();
-    $file = $path_front."/results/".$assignment_id."/assignment_config.json";
+    $data_path = get_data_path();
+    $file = $data_path."/results/".$assignment_id."/assignment_config.json";
     if (!file_exists($file)) {
         return false;//TODO Handle this case
     }
@@ -212,8 +241,8 @@ function get_assignment_config($username, $assignment_id) {
 
 // Get results from test cases for a student submission
 function get_assignment_results($username, $assignment_id, $assignment_version) {
-    $path_front = get_path_front();
-    $file = $path_front."/results/".$assignment_id."/".$username."/".$assignment_version."/submission.json";
+    $data_path = get_data_path();
+    $file = $data_path."/results/".$assignment_id."/".$username."/".$assignment_version."/submission.json";
     if (!file_exists($file)) {
         return false;
     }
@@ -225,8 +254,8 @@ function get_assignment_results($username, $assignment_id, $assignment_version) 
 //SUBMITTING VERSION
 
 function get_user_submitting_version($username, $assignment_id) {
-    $path_front = get_path_front();
-    $file = $path_front."/submissions/".$assignment_id."/".$username."/user_assignment_settings.json";
+    $data_path = get_data_path();
+    $file = $data_path."/submissions/".$assignment_id."/".$username."/user_assignment_settings.json";
     if (!file_exists($file)) {
         return 0;
     }
@@ -241,8 +270,8 @@ function change_assignment_version($username, $assignment_id, $assignment_versio
     if (!is_valid_assignment_version($username, $assignment_id, $assignment_version)) {
         return array("error"=>"This assignment version ".$assignment_version." does not exist");
     }
-    $path_front = get_path_front();
-    $file = $path_front."/submissions/".$assignment_id."/".$username."/user_assignment_settings.json";
+    $data_path = get_data_path();
+    $file = $data_path."/submissions/".$assignment_id."/".$username."/user_assignment_settings.json";
     if (!file_exists($file)) {
         return array("error"=>"Unable to find user settings");
     }
@@ -257,7 +286,7 @@ function change_assignment_version($username, $assignment_id, $assignment_versio
 // Converts the JSON "diff" field from submission.json to an array containing
 // file contents
 function get_testcase_diff($username, $assignment_id, $assignment_version, $diff){
-    $path_front = get_path_front();
+    $data_path = get_data_path();
 
     if (!isset($diff["instructor_file"]) ||
         !isset($diff["student_file"]) ||
@@ -265,8 +294,8 @@ function get_testcase_diff($username, $assignment_id, $assignment_version, $diff
         return "";
     }
 
-    $instructor_file_path = "$path_front/".$diff["instructor_file"];
-    $student_path = "$path_front/results/$assignment_id/$username/$assignment_version/";
+    $instructor_file_path = "$data_path/".$diff["instructor_file"];
+    $student_path = "$data_path/results/$assignment_id/$username/$assignment_version/";
 
     if (!file_exists($instructor_file_path) ||
         !file_exists($student_path . $diff["student_file"]) ||
