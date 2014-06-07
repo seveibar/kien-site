@@ -1,3 +1,4 @@
 {
-    "course_data_path": ""
+    "course_data_path": "path/to/coursedata"
+    "submissions_path": "path/to/submissions"
 }
