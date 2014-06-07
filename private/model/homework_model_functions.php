@@ -1,8 +1,5 @@
 <?php
 
-// Relative to public directory
-static $site_config_path = "../config.json";
-
 //This will be changed to whatever exists in the above file
 static $config = NULL;
 

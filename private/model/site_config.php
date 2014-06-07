@@ -1,5 +1,7 @@
 <?php
 
+require_once("io.php");
+
 // Returns course data path, loads config if necessary
 function get_data_path() {
     // Return course data path
@@ -10,6 +12,11 @@ function get_data_path() {
 function get_submissions_path(){
     // Return submissions path
     return load_config()["submissions_path"];
+}
+
+// Returns true if development mode was enabled in the config file
+function dev_mode(){
+    return load_config()["development"];
 }
 
 
