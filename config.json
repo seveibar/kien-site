@@ -1,5 +1,5 @@
 {
-    "course_data_path": "/home/seve/workspace/new-hw-server/csci1200/coursedata",
-    "submissions_path": "/home/seve/workspace/new-hw-server/csci1200/submissions",
-    "development": true
+    "development": true,
+    "course_data_path": "/home/seve/workspace/new-hw-server/data/coursedata",
+    "submissions_path": "/home/seve/workspace/new-hw-server/data/submissions"
 }

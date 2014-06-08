@@ -55,7 +55,7 @@ function version_in_grading_queue($username, $assignment_id, $assignment_version
 
 // Get the number representing the version of the code the user is submitting
 function get_user_submitting_version($username, $assignment_id) {
-    $file_path = get_submissions_path().$assignment_id."/".$username."/user_assignment_settings.json";
+    $file_path = get_submissions_path()."/".$assignment_id."/".$username."/user_assignment_settings.json";
     return load_json($file_path)["selected_assignment"];
 }
 
@@ -67,7 +67,7 @@ function change_assignment_version($username, $assignment_id, $assignment_versio
     if (!is_valid_assignment_version($username, $assignment_id, $assignment_version)) {
         return array("error"=>"This assignment version ".$assignment_version." does not exist");
     }
-    $file_path = get_submissions_path().$assignment_id."/".$username."/user_assignment_settings.json";
+    $file_path = get_submissions_path()."/".$assignment_id."/".$username."/user_assignment_settings.json";
     $json = load_json($file_path);
     $json["selected_assignment"] = $assignment_version;
     file_put_contents($file, json_encode($json));
